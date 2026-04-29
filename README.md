@@ -90,9 +90,6 @@ Backend integration using Node.js + MongoDB
 AI-powered spending insights
 Admin analytics dashboard
 Bank account integration APIs
-Installation
-Clone the repository
-git clone https://github.com/your-username/expenseiq-finance-dashboard.git
 Open the project folder
 cd expenseiq-finance-dashboard
 Run the project
