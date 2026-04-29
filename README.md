@@ -58,6 +58,7 @@ Finance Analytics Dashboard/
 ├── profile.html
 ├── style.css
 └── app.js
+```
 Core Modules
 Dashboard
 
@@ -82,7 +83,6 @@ Automatic warnings for overspending, bill reminders, and financial recommendatio
 Reports
 
 Monthly financial summaries with CSV export and print-to-PDF functionality.
-
 Future Enhancements
 Email alerts using Nodemailer
 Mobile app version
@@ -96,7 +96,5 @@ git clone https://github.com/your-username/expenseiq-finance-dashboard.git
 Open the project folder
 cd expenseiq-finance-dashboard
 Run the project
-
 Simply open index.html in your browser
-
 or use VS Code Live Server for better development experience.
