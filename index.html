@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Track Smart. Spend Better.</title>
+<meta name="description" content="ExpenseIQ is your smart finance control system. Track income, manage budgets, get alerts, and improve savings."/>
+<link rel="stylesheet" href="style.css"/>
+<style>
+.bg-blobs{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;}
+.bg-blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.07;animation:blob-drift 12s ease-in-out infinite alternate;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(204,255,0,.25),transparent);margin:0 2rem;}
+.stat-row{display:flex;justify-content:center;gap:4rem;padding:2rem;flex-wrap:wrap;}
+.stat-item{text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-weight:800;font-size:2.8rem;color:var(--acid);letter-spacing:-.05em;}
+.stat-label{font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--mid);margin-top:.2rem;}
+.section-heading{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(1.8rem,4vw,3rem);text-transform:uppercase;letter-spacing:-.04em;text-align:center;margin-bottom:2.5rem;text-shadow:2px 0 0 rgba(255,0,255,.25),-2px 0 0 rgba(0,240,255,.25);}
+</style>
+</head>
+<body>
+<!-- MARQUEE TOP -->
+<div class="marquee-bar">
+  <div class="marquee-track">
+    <span>◈ TRACK EVERY RUPEE</span><span>◆ SET SMART BUDGETS</span><span>▲ BEAT YOUR SAVINGS GOALS</span><span>◈ REAL-TIME ALERTS</span><span>◆ BEAUTIFUL ANALYTICS</span><span>▲ EXPORT REPORTS</span>
+    <span>◈ TRACK EVERY RUPEE</span><span>◆ SET SMART BUDGETS</span><span>▲ BEAT YOUR SAVINGS GOALS</span><span>◈ REAL-TIME ALERTS</span><span>◆ BEAUTIFUL ANALYTICS</span><span>▲ EXPORT REPORTS</span>
+  </div>
+</div>
+
+<!-- BG BLOBS -->
+<div class="bg-blobs">
+  <div class="bg-blob" style="width:500px;height:500px;background:var(--acid);top:-100px;right:-100px;animation-delay:0s;"></div>
+  <div class="bg-blob" style="width:400px;height:400px;background:var(--pink);bottom:-100px;left:-100px;animation-delay:4s;"></div>
+  <div class="bg-blob" style="width:300px;height:300px;background:var(--cyan);top:50%;left:50%;animation-delay:8s;"></div>
+</div>
+
+<div style="position:relative;z-index:1;">
+  <!-- NAV -->
+  <nav style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2.5rem;border-bottom:1px solid rgba(255,255,255,.06);">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;text-transform:uppercase;letter-spacing:-.04em;background:linear-gradient(135deg,var(--acid),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">EXPENSEIQ</div>
+    <div style="display:flex;gap:.6rem;">
+      <a href="login.html" class="chrome-btn ghost" style="display:inline-block;padding:.5rem 1.1rem;">Login</a>
+      <a href="login.html#signup" class="chrome-btn" style="display:inline-block;padding:.5rem 1.1rem;">Get Started →</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="landing-hero">
+    <div style="font-size:.65rem;letter-spacing:.3em;color:var(--acid);text-transform:uppercase;border:1px solid rgba(204,255,0,.3);padding:.3rem .8rem;border-radius:20px;margin-bottom:1.5rem;">Smart Finance OS · 2026</div>
+    <h1 class="hero-title glitch">
+      Track Smart.<br>
+      <span class="acid-word">Spend Better.</span>
+    </h1>
+    <p class="hero-sub">ExpenseIQ is not just an expense tracker. It's a <strong style="color:var(--white);">smart financial control system</strong> that tracks your spending, alerts you before you overspend, and helps you build better money habits.</p>
+    <div class="hero-ctas">
+      <a href="login.html#signup" class="cta-primary">Start Free →</a>
+      <a href="dashboard.html" class="cta-secondary">View Dashboard</a>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stat-row">
+    <div class="stat-item"><div class="stat-num" id="stat1">0</div><div class="stat-label">Users Tracking</div></div>
+    <div class="stat-item"><div class="stat-num" id="stat2">₹0</div><div class="stat-label">Expenses Tracked</div></div>
+    <div class="stat-item"><div class="stat-num" id="stat3">0%</div><div class="stat-label">Avg Savings Boost</div></div>
+    <div class="stat-item"><div class="stat-num" id="stat4">0</div><div class="stat-label">Alerts Sent</div></div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- FEATURES -->
+  <section style="padding:4rem 2rem;">
+    <h2 class="section-heading">Everything You Need</h2>
+    <div class="features-grid" style="padding:0;max-width:1100px;margin:0 auto;">
+      <div class="feature-card">
+        <div class="feature-icon">💸</div>
+        <div class="feature-title">Expense Tracking</div>
+        <div class="feature-desc">Log income and expenses instantly. Add categories, notes, and dates. Full CRUD with filters.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <div class="feature-title">Smart Budgets</div>
+        <div class="feature-desc">Set monthly limits per category. Watch progress bars fill up in real-time as you spend.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Instant Alerts</div>
+        <div class="feature-desc">Get warned before you overspend. Critical alerts when budget is exceeded, bill reminders too.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Rich Analytics</div>
+        <div class="feature-desc">Pie charts, bar graphs, line trends, daily heatmaps. See where your money actually goes.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📥</div>
+        <div class="feature-title">Export Reports</div>
+        <div class="feature-desc">Download monthly summaries as CSV. Print PDF reports. Share with your accountant.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">Smart Insights</div>
+        <div class="feature-desc">Rule-based tips highlight spending spikes and savings opportunities automatically.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- WORKFLOW -->
+  <section style="padding:4rem 2rem;">
+    <h2 class="section-heading">How It Works</h2>
+    <div class="workflow-steps">
+      <div class="step-row">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div class="step-num">1</div><div style="width:2px;flex:1;background:linear-gradient(180deg,var(--acid),transparent);min-height:40px;"></div></div>
+        <div class="step-content"><h4>Create Account &amp; Login</h4><p>Quick signup, secure local data. Your data stays on your device.</p></div>
+      </div>
+      <div class="step-row">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div class="step-num">2</div><div style="width:2px;flex:1;background:linear-gradient(180deg,var(--acid),transparent);min-height:40px;"></div></div>
+        <div class="step-content"><h4>Add Income &amp; Expenses</h4><p>Log every transaction with category, amount, and date in seconds.</p></div>
+      </div>
+      <div class="step-row">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div class="step-num">3</div><div style="width:2px;flex:1;background:linear-gradient(180deg,var(--acid),transparent);min-height:40px;"></div></div>
+        <div class="step-content"><h4>Set Monthly Budgets</h4><p>Define limits per category — Food, Travel, Bills, Shopping, and more.</p></div>
+      </div>
+      <div class="step-row">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div class="step-num">4</div><div style="width:2px;flex:1;background:linear-gradient(180deg,var(--acid),transparent);min-height:40px;"></div></div>
+        <div class="step-content"><h4>System Tracks Automatically</h4><p>Dashboard updates in real-time. Alerts fire when limits are near.</p></div>
+      </div>
+      <div class="step-row">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div class="step-num">5</div><div style="width:2px;flex:1;background:linear-gradient(180deg,var(--acid),transparent);min-height:40px;"></div></div>
+        <div class="step-content"><h4>Analyze with Charts</h4><p>Pie, bar, line, and heatmap charts reveal your spending patterns.</p></div>
+      </div>
+      <div class="step-row">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div class="step-num">6</div><div style="width:2px;flex:1;background:linear-gradient(180deg,var(--acid),transparent);min-height:40px;"></div></div>
+        <div class="step-content"><h4>Download Reports</h4><p>Monthly CSV and printable PDF summaries for review and tax purposes.</p></div>
+      </div>
+      <div class="step-row">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div class="step-num">7</div></div>
+        <div class="step-content"><h4>Improve &amp; Repeat</h4><p>Use insights to spend smarter, save more, and hit your financial goals.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section style="padding:4rem 2rem;text-align:center;background:rgba(204,255,0,.04);border-top:1px solid rgba(204,255,0,.1);border-bottom:1px solid rgba(204,255,0,.1);">
+    <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(1.5rem,4vw,2.8rem);text-transform:uppercase;letter-spacing:-.03em;margin-bottom:1rem;">Ready to Control Your Money?</h2>
+    <p style="color:var(--mid);margin-bottom:2rem;font-size:.9rem;">Join thousands who track smarter. No subscription. No cloud. 100% yours.</p>
+    <a href="login.html#signup" class="cta-primary" style="display:inline-block;">Launch ExpenseIQ →</a>
+  </section>
+</div>
+
+<!-- MARQUEE BOTTOM -->
+<div class="marquee-bar bottom">
+  <div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;">
+    <span>◆ BUILT WITH VANILLA JS</span><span>▲ LOCALSTORAGE POWERED</span><span>◆ NO BACKEND NEEDED</span><span>▲ OPEN SOURCE READY</span><span>◆ PRIVACY FIRST</span><span>▲ ZERO SUBSCRIPTIONS</span>
+    <span>◆ BUILT WITH VANILLA JS</span><span>▲ LOCALSTORAGE POWERED</span><span>◆ NO BACKEND NEEDED</span><span>▲ OPEN SOURCE READY</span><span>◆ PRIVACY FIRST</span><span>▲ ZERO SUBSCRIPTIONS</span>
+  </div>
+</div>
+
+<script>
+function countUp(id,target,prefix='',suffix='',dur=1800){
+  const el=document.getElementById(id);if(!el)return;
+  const start=performance.now();
+  (function step(now){
+    const t=Math.min((now-start)/dur,1),v=Math.round((1-Math.pow(1-t,3))*target);
+    el.textContent=prefix+v.toLocaleString('en-IN')+suffix;
+    if(t<1)requestAnimationFrame(step);
+  })(start);
+}
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){countUp('stat1',48200,'','',2000);countUp('stat2',920000000,'₹','',2500);countUp('stat3',34,'','%',1800);countUp('stat4',2100000,'','',2200);obs.disconnect();}});
+},{threshold:.3});
+obs.observe(document.querySelector('.stat-row'));
+</script>
+</body>
+</html>

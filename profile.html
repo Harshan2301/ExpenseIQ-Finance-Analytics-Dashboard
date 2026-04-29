@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Profile</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="marquee-bar"><div class="marquee-track"><span>◈ PROFILE & SETTINGS</span><span>◆ PREFERENCES · NOTIFICATIONS · DATA</span><span>◈ PROFILE & SETTINGS</span><span>◆ PREFERENCES · NOTIFICATIONS · DATA</span></div></div>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="page-title glitch" id="page-title">PROFILE</div><div id="page-subtitle"></div></div>
+    </div>
+
+    <!-- USER CARD -->
+    <div class="liquid-card" style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <div id="profile-avatar" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--acid),var(--cyan));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:var(--void);flex-shrink:0;box-shadow:0 0 24px rgba(204,255,0,.3);"></div>
+      <div style="flex:1;">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;" id="profile-name">—</div>
+        <div style="font-size:.75rem;color:var(--mid);" id="profile-email">—</div>
+        <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+          <span class="tag income" id="profile-currency-tag"></span>
+          <span style="font-size:.65rem;color:var(--mid);padding:.2rem .5rem;background:rgba(255,255,255,.05);border-radius:4px;" id="profile-joined"></span>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:.6rem;letter-spacing:.2em;color:var(--mid);text-transform:uppercase;">Total Transactions</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:2.5rem;color:var(--acid);" id="profile-tx-count">—</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;">
+      <!-- ACCOUNT SETTINGS -->
+      <div class="liquid-card">
+        <div class="chart-title">Account Settings</div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input id="u-name" class="form-input" placeholder="Your name"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="u-email" class="form-input" type="email" placeholder="your@email.com"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Currency</label>
+          <select id="u-currency" class="form-input">
+            <option value="₹|INR">₹ Indian Rupee (INR)</option>
+            <option value="$|USD">$ US Dollar (USD)</option>
+            <option value="€|EUR">€ Euro (EUR)</option>
+            <option value="£|GBP">£ British Pound (GBP)</option>
+            <option value="¥|JPY">¥ Japanese Yen (JPY)</option>
+          </select>
+        </div>
+        <button class="chrome-btn" style="width:100%;padding:.65rem;" onclick="saveProfile()">Save Changes →</button>
+      </div>
+
+      <!-- PREFERENCES -->
+      <div class="liquid-card accent-pink">
+        <div class="chart-title">Preferences</div>
+        <div class="form-group">
+          <label class="form-label">Accent Color</label>
+          <div style="display:flex;gap:.6rem;margin-top:.3rem;">
+            <div onclick="setAccent('acid')" id="accent-acid" style="width:32px;height:32px;border-radius:50%;background:var(--acid);cursor:pointer;border:2px solid transparent;transition:all .2s;box-shadow:0 0 10px rgba(204,255,0,.4);" title="Acid Green"></div>
+            <div onclick="setAccent('pink')" id="accent-pink" style="width:32px;height:32px;border-radius:50%;background:var(--pink);cursor:pointer;border:2px solid transparent;transition:all .2s;" title="Hyper Pink"></div>
+            <div onclick="setAccent('cyan')" id="accent-cyan" style="width:32px;height:32px;border-radius:50%;background:var(--cyan);cursor:pointer;border:2px solid transparent;transition:all .2s;" title="Cyan Glow"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Week Starts On</label>
+          <select id="u-weekstart" class="form-input">
+            <option value="mon">Monday</option>
+            <option value="sun">Sunday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Report View</label>
+          <select id="u-reportview" class="form-input">
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+        <button class="chrome-btn ghost" style="width:100%;padding:.65rem;" onclick="savePrefs()">Save Preferences →</button>
+      </div>
+    </div>
+
+    <!-- STATS SUMMARY -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">
+      <div class="liquid-card" style="padding:1rem;text-align:center;"><div class="card-label" style="text-align:center;">Total Saved</div><div class="card-value acid" id="s-saved">—</div></div>
+      <div class="liquid-card accent-pink" style="padding:1rem;text-align:center;"><div class="card-label" style="text-align:center;">Total Spent</div><div class="card-value pink" id="s-spent">—</div></div>
+      <div class="liquid-card accent-cyan" style="padding:1rem;text-align:center;"><div class="card-label" style="text-align:center;">Total Income</div><div class="card-value cyan" id="s-income">—</div></div>
+      <div class="liquid-card" style="padding:1rem;text-align:center;"><div class="card-label" style="text-align:center;">Categories Used</div><div class="card-value" id="s-cats" style="color:var(--white);">—</div></div>
+    </div>
+
+    <!-- DATA MANAGEMENT -->
+    <div class="liquid-card accent-danger">
+      <div class="chart-title">Data Management <span class="chart-badge" style="border-color:rgba(255,51,102,.4);color:var(--danger);background:rgba(255,51,102,.1);">DANGER ZONE</span></div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.2rem;">Export All Data</div>
+          <div style="font-size:.72rem;color:var(--mid);margin-bottom:.6rem;">Download a complete JSON backup of all your data.</div>
+          <button class="chrome-btn ghost" onclick="exportAllData()">⬇ Export JSON Backup</button>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.2rem;">Reset All Data</div>
+          <div style="font-size:.72rem;color:var(--mid);margin-bottom:.6rem;">This will delete ALL transactions, budgets, and settings. Cannot be undone.</div>
+          <button class="chrome-btn danger" onclick="confirmReset()">⚠ Reset Everything</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="marquee-bar bottom"><div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;"><span>◆ YOUR DATA · YOUR DEVICE</span><span>▲ ZERO CLOUD · FULL PRIVACY</span><span>◆ YOUR DATA · YOUR DEVICE</span><span>▲ ZERO CLOUD · FULL PRIVACY</span></div></div>
+<div id="modal-overlay"></div>
+<div id="toast-wrap"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script>
+initDB();
+document.getElementById('sidebar-mount').innerHTML=getSidebar('profile.html');
+document.getElementById('page-subtitle').textContent='Account settings & preferences';
+
+function loadProfile(){
+  const u=getUser(),p=getPrefs(),txns=getTransactions();
+  document.getElementById('profile-avatar').textContent=u.avatar||'U';
+  document.getElementById('profile-name').textContent=u.name||'User';
+  document.getElementById('profile-email').textContent=u.email||'—';
+  document.getElementById('profile-currency-tag').textContent=(u.currency||'₹')+' '+( u.currencyCode||'INR');
+  document.getElementById('profile-joined').textContent=u.joined?'Joined '+new Date(u.joined).toLocaleDateString('en',{month:'short',year:'numeric'}):'Active User';
+  document.getElementById('profile-tx-count').textContent=txns.length;
+  document.getElementById('u-name').value=u.name||'';
+  document.getElementById('u-email').value=u.email||'';
+  const curOpt=[...document.getElementById('u-currency').options].find(o=>o.value.startsWith(u.currency||'₹'));
+  if(curOpt)curOpt.selected=true;
+  document.getElementById('u-weekstart').value=p.weekStart||'mon';
+  setAccent(p.accentColor||'acid',true);
+
+  // Stats
+  const income=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const spent=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const saved=income-spent;
+  const usedCats=new Set(txns.map(t=>t.category)).size;
+  document.getElementById('s-income').textContent=fmt(income);
+  document.getElementById('s-spent').textContent=fmt(spent);
+  document.getElementById('s-saved').textContent=fmt(Math.max(saved,0));
+  document.getElementById('s-cats').textContent=usedCats;
+}
+
+function setAccent(color,init=false){
+  ['acid','pink','cyan'].forEach(c=>{
+    const el=document.getElementById('accent-'+c);
+    if(el)el.style.border=c===color?'2px solid var(--white)':'2px solid transparent';
+  });
+  if(!init){const p=getPrefs();setPrefs({...p,accentColor:color});showToast('Accent set to '+color,'info');}
+}
+
+function saveProfile(){
+  const name=document.getElementById('u-name').value.trim();
+  const email=document.getElementById('u-email').value.trim();
+  const curVal=document.getElementById('u-currency').value.split('|');
+  if(!name){showToast('Name cannot be empty','error');return;}
+  const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  setUser({...getUser(),name,email,currency:curVal[0],currencyCode:curVal[1],avatar:initials});
+  showToast('Profile saved!');
+  loadProfile();
+}
+
+function savePrefs(){
+  const p={...getPrefs(),weekStart:document.getElementById('u-weekstart').value};
+  setPrefs(p);showToast('Preferences saved!');
+}
+
+function exportAllData(){
+  const data={transactions:getTransactions(),budgets:getBudgets(),user:getUser(),prefs:getPrefs(),exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='ExpenseIQ_backup.json';
+  a.click();showToast('Backup exported!');
+}
+
+function confirmReset(){
+  showModal('Reset All Data',
+    '<p style="font-size:.9rem;color:var(--mid);line-height:1.6;">This will permanently delete all your transactions, budgets, alerts, and settings.<br><br><strong style="color:var(--danger);">This action cannot be undone.</strong></p>',
+    `<button class="chrome-btn ghost" onclick="closeModal()">Cancel</button>
+     <button class="chrome-btn danger" onclick="doReset()">Yes, Reset Everything</button>`);
+}
+function doReset(){
+  ['eiq_tx','eiq_bud','eiq_user','eiq_alerts','eiq_prefs','eiq_seeded'].forEach(k=>localStorage.removeItem(k));
+  closeModal();showToast('All data cleared. Reloading...','error');
+  setTimeout(()=>{initDB();loadProfile();},1200);
+}
+
+loadProfile();
+</script>
+</body>
+</html>

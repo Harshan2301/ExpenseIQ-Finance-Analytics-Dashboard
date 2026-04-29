@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Dashboard</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="marquee-bar"><div class="marquee-track" id="mt"></div></div>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title glitch" id="page-title">DASHBOARD</div>
+        <div id="page-subtitle"></div>
+      </div>
+      <div class="topbar-actions">
+        <div style="font-size:.68rem;color:var(--mid);letter-spacing:.1em;text-transform:uppercase;">
+          <span class="status-dot"></span> &nbsp;<span id="live-time"></span>
+        </div>
+        <button class="chrome-btn ghost" onclick="openAddTx()">+ Add Transaction</button>
+      </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <!-- CHARTS ROW -->
+    <div style="display:grid;grid-template-columns:1.8fr 1fr;gap:1.1rem;" id="charts-row">
+      <div class="liquid-card">
+        <div class="chart-title">
+          Income vs Expenses
+          <div class="time-tabs">
+            <button class="time-tab" onclick="setRange('3M',this)">3M</button>
+            <button class="time-tab active" onclick="setRange('6M',this)">6M</button>
+          </div>
+        </div>
+        <canvas id="trend-chart" style="width:100%;"></canvas>
+      </div>
+      <div class="liquid-card accent-pink">
+        <div class="chart-title">Spending by Category</div>
+        <canvas id="pie-chart" width="180" height="180" style="display:block;margin:0 auto;"></canvas>
+        <div id="pie-legend" style="display:flex;flex-direction:column;gap:.45rem;margin-top:.85rem;"></div>
+      </div>
+    </div>
+
+    <!-- BUDGET ROW -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;">
+      <div class="liquid-card">
+        <div class="chart-title">Budget Status <span class="chart-badge" id="budget-badge">THIS MONTH</span></div>
+        <div id="budget-bars"></div>
+      </div>
+      <!-- RECENT TX -->
+      <div class="liquid-card accent-cyan">
+        <div class="chart-title">
+          Recent Transactions
+          <a href="transactions.html" class="chart-badge" style="cursor:pointer;text-decoration:none;color:var(--acid);">VIEW ALL →</a>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Description</th><th>Category</th><th>Amount</th></tr></thead>
+          <tbody id="recent-tx"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div class="liquid-card">
+      <div class="chart-title">Smart Insights <span class="chart-badge">AI-LITE</span></div>
+      <div id="insights" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.85rem;"></div>
+    </div>
+  </main>
+</div>
+
+<div class="marquee-bar bottom"><div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;"><span>◆ EXPENSEIQ OS</span><span>▲ BUDGET TRACKING ACTIVE</span><span>◆ ALERTS ENABLED</span><span>▲ DATA SYNCED</span><span>◆ EXPENSEIQ OS</span><span>▲ BUDGET TRACKING ACTIVE</span><span>◆ ALERTS ENABLED</span><span>▲ DATA SYNCED</span></div></div>
+
+<div id="modal-overlay"></div>
+<div id="toast-wrap"></div>
+<div class="chart-tooltip" id="chart-tooltip"><div class="tip-date" id="tip-date"></div><div class="tip-val" id="tip-val"></div></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/charts.js"></script>
+<script>
+initDB();
+const cm=currentMonth(),u=getUser();
+
+// MARQUEE
+document.getElementById('mt').innerHTML='<span>◈ EXPENSEIQ DASHBOARD</span><span>◆ '+currentMonthLabel().toUpperCase()+'</span><span>▲ LIVE TRACKING ON</span><span>◈ EXPENSEIQ DASHBOARD</span><span>◆ '+currentMonthLabel().toUpperCase()+'</span><span>▲ LIVE TRACKING ON</span>';
+
+// SIDEBAR + HEADER
+document.getElementById('sidebar-mount').innerHTML=getSidebar('dashboard.html');
+document.getElementById('page-subtitle').textContent=currentMonthLabel()+' · Overview';
+startClock();
+
+// KPI
+function renderKPIs(){
+  const s=getMonthSummary(cm),bal=getTotalBalance(),bud=getBudgets();
+  const budgetUsed=(s.expense/bud.monthly*100).toFixed(1);
+  const kpis=[
+    {label:'Total Balance',value:fmt(bal),color:'acid',delta:'All time',icon:'💰',blob:'var(--acid)'},
+    {label:'Monthly Income',value:fmt(s.income),color:'cyan',delta:'This month',icon:'📈',blob:'var(--cyan)'},
+    {label:'Total Spent',value:fmt(s.expense),color:'pink',delta:budgetUsed+'% of budget',icon:'💸',blob:'var(--pink)'},
+    {label:'Savings',value:fmt(s.savings<0?0:s.savings),color:s.savings<0?'danger':'acid',delta:s.savingsRate.toFixed(1)+'% savings rate',icon:'🎯',blob:'var(--acid)'},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
+    <div class="liquid-card" style="padding:1.2rem;">
+      <div class="glow-blob" style="background:${k.blob};"></div>
+      <div class="card-label">${k.label}</div>
+      <div class="card-value ${k.color}" id="kv-${k.label.replace(/\s/g,'')}">${k.value}</div>
+      <div style="font-size:.68rem;color:var(--mid);margin-top:.35rem;">${k.delta}</div>
+    </div>`).join('');
+}
+renderKPIs();
+
+// TREND CHART
+let activeRange='6M';
+function renderTrend(range){
+  activeRange=range;
+  const months=range==='3M'?3:6;
+  const hist=getMonthlyHistory(months);
+  const labels=hist.map(h=>h.label);
+  drawLineChart('trend-chart',[
+    {data:hist.map(h=>h.income),color:'#CCFF00'},
+    {data:hist.map(h=>h.expense),color:'#FF00FF'},
+  ],labels);
+}
+renderTrend('6M');
+function setRange(r,btn){document.querySelectorAll('.time-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTrend(r);}
+
+// PIE
+function renderPie(){
+  const cats=getCategoryBreakdown(cm).filter(c=>c.spent>0);
+  drawPieChart('pie-chart',cats.map(c=>({value:c.spent,color:c.color})),{donut:true,centerText:'Spent',centerSub:currentMonthLabel().split(' ')[0]});
+  const total=cats.reduce((s,c)=>s+c.spent,0);
+  document.getElementById('pie-legend').innerHTML=cats.slice(0,5).map(c=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:.75rem;">
+      <div style="display:flex;align-items:center;gap:.4rem;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${c.color};box-shadow:0 0 5px ${c.color}80;flex-shrink:0;"></div>
+        <span style="color:var(--light);">${c.icon} ${c.label}</span>
+      </div>
+      <span style="color:var(--white);font-weight:600;">${total>0?(c.spent/total*100).toFixed(0):0}%</span>
+    </div>`).join('');
+}
+renderPie();
+
+// BUDGET BARS
+function renderBudget(){
+  const bud=getBudgets(),cats=getCategoryBreakdown(cm);
+  document.getElementById('budget-bars').innerHTML=cats.filter(c=>bud.categories[c.id]).map(c=>{
+    const limit=bud.categories[c.id],pct=Math.min(c.spent/limit*100,100);
+    const barColor=pct>=100?'var(--danger)':pct>=80?'#FFB800':'var(--acid)';
+    return`<div class="budget-item">
+      <div class="budget-header">
+        <div class="budget-cat"><span>${c.icon}</span><span>${c.label}</span></div>
+        <div class="budget-nums">${fmt(c.spent)} / ${fmt(limit)}</div>
+      </div>
+      <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%;background:${barColor};box-shadow:0 0 8px ${barColor}60;"></div></div>
+    </div>`;
+  }).join('');
+}
+renderBudget();
+
+// RECENT TX
+function renderRecent(){
+  const txns=getTransactions().slice(0,6);
+  document.getElementById('recent-tx').innerHTML=txns.map(t=>{
+    const c=getCatById(t.category);
+    const amt=t.type==='income'?`<span style="color:var(--acid);">+${fmt(t.amount)}</span>`:`<span style="color:var(--danger);">-${fmt(t.amount)}</span>`;
+    return`<tr>
+      <td><div style="font-weight:600;font-size:.8rem;">${t.desc}</div><div style="font-size:.65rem;color:var(--mid);">${t.date}</div></td>
+      <td><span class="tag ${t.category}">${c.icon} ${c.label}</span></td>
+      <td style="font-weight:700;white-space:nowrap;">${amt}</td>
+    </tr>`;
+  }).join('');
+}
+renderRecent();
+
+// INSIGHTS
+function renderInsights(){
+  const s=getMonthSummary(cm),bud=getBudgets(),cats=getCategoryBreakdown(cm);
+  const insights=[];
+  if(s.savingsRate<20) insights.push({icon:'⚠️',title:'Low Savings Rate',msg:`You're saving only ${s.savingsRate.toFixed(0)}% this month. Aim for 30%+.`,color:'var(--danger)'});
+  else insights.push({icon:'🎯',title:'Great Savings!',msg:`You're saving ${s.savingsRate.toFixed(0)}% of income. Keep it up!`,color:'var(--acid)'});
+  const topCat=cats[0];
+  if(topCat&&topCat.spent>0) insights.push({icon:'📊',title:`Top Spend: ${topCat.label}`,msg:`${topCat.icon} ${fmt(topCat.spent)} spent — ${(topCat.spent/s.expense*100).toFixed(0)}% of total.`,color:'var(--cyan)'});
+  const overBudget=cats.filter(c=>bud.categories[c.id]&&c.spent>bud.categories[c.id]);
+  if(overBudget.length) insights.push({icon:'🚨',title:`${overBudget.length} Category Over Budget`,msg:overBudget.map(c=>c.label).join(', ')+' exceeded limits.',color:'var(--danger)'});
+  else insights.push({icon:'✅',title:'All Budgets On Track',msg:'No categories have exceeded their limits this month.',color:'var(--success)'});
+  document.getElementById('insights').innerHTML=insights.map(i=>`
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:1rem;">
+      <div style="font-size:1.4rem;margin-bottom:.4rem;">${i.icon}</div>
+      <div style="font-size:.82rem;font-weight:700;color:${i.color};margin-bottom:.2rem;">${i.title}</div>
+      <div style="font-size:.73rem;color:var(--mid);line-height:1.5;">${i.msg}</div>
+    </div>`).join('');
+}
+renderInsights();
+
+// ADD TX MODAL
+function openAddTx(){
+  showModal('Add Transaction',getTransactionForm(null),
+    `<button class="chrome-btn ghost" onclick="closeModal()">Cancel</button>
+     <button class="chrome-btn" onclick="saveNewTx()">Save →</button>`);
+}
+function saveNewTx(){
+  const tx=collectTxForm();if(!tx)return;
+  addTransaction(tx);
+  closeModal();showToast('Transaction added!');
+  renderKPIs();renderRecent();renderPie();renderBudget();renderInsights();renderTrend(activeRange);
+}
+window.addEventListener('resize',()=>renderTrend(activeRange));
+</script>
+</body>
+</html>

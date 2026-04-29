@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Reports</title>
+<link rel="stylesheet" href="style.css"/>
+<style>
+@media print{.marquee-bar,.sidebar,.topbar-actions,.chart-title .chart-badge,button{display:none!important;}.app-shell{grid-template-columns:1fr!important;}.main{padding:1rem!important;}.liquid-card{break-inside:avoid;}}
+</style>
+</head>
+<body>
+<div class="marquee-bar"><div class="marquee-track"><span>◈ REPORTS</span><span>◆ MONTHLY SUMMARY · CSV · PDF</span><span>◈ REPORTS</span><span>◆ MONTHLY SUMMARY · CSV · PDF</span></div></div>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="page-title glitch" id="page-title">REPORTS</div><div id="page-subtitle"></div></div>
+      <div class="topbar-actions">
+        <select id="month-sel" class="form-input" style="padding:.45rem .75rem;" onchange="loadReport()"></select>
+        <button class="chrome-btn ghost" onclick="exportCSV()">⬇ CSV</button>
+        <button class="chrome-btn" onclick="window.print()">🖨 PDF</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="kpi-grid" id="report-kpis"></div>
+
+    <!-- CHART -->
+    <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:1.1rem;">
+      <div class="liquid-card">
+        <div class="chart-title">Spending by Category <span class="chart-badge" id="report-month-label"></span></div>
+        <canvas id="report-bar" style="width:100%;"></canvas>
+      </div>
+      <div class="liquid-card accent-pink">
+        <div class="chart-title">Category Split</div>
+        <canvas id="report-pie" width="180" height="180" style="display:block;margin:0 auto;"></canvas>
+        <div id="report-legend" style="display:flex;flex-direction:column;gap:.4rem;margin-top:.85rem;"></div>
+      </div>
+    </div>
+
+    <!-- DETAILED TABLE -->
+    <div class="liquid-card">
+      <div class="chart-title">Full Transaction Log <span class="chart-badge" id="tx-report-count">0 RECORDS</span></div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th></tr></thead>
+          <tbody id="report-tx-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CATEGORY BREAKDOWN TABLE -->
+    <div class="liquid-card accent-cyan">
+      <div class="chart-title">Category Breakdown</div>
+      <table class="data-table">
+        <thead><tr><th>Category</th><th>Transactions</th><th>Total Spent</th><th>Budget</th><th>Status</th></tr></thead>
+        <tbody id="cat-breakdown-body"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="marquee-bar bottom"><div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;"><span>◆ MONTHLY REPORTS</span><span>▲ EXPORT TO CSV</span><span>◆ PRINT PDF</span><span>◆ MONTHLY REPORTS</span><span>▲ EXPORT TO CSV</span><span>◆ PRINT PDF</span></div></div>
+<div id="toast-wrap"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/charts.js"></script>
+<script>
+initDB();
+document.getElementById('sidebar-mount').innerHTML=getSidebar('reports.html');
+document.getElementById('page-subtitle').textContent='Monthly summary & data exports';
+
+// Populate month selector (last 12 months)
+const sel=document.getElementById('month-sel');
+const now=new Date();
+for(let i=0;i<12;i++){
+  const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+  const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  const lbl=d.toLocaleDateString('en',{month:'long',year:'numeric'});
+  sel.add(new Option(lbl,val));
+}
+
+function loadReport(){
+  const month=sel.value;
+  const s=getMonthSummary(month);
+  const cats=getCategoryBreakdown(month);
+  const txns=getTransactions().filter(t=>t.date.startsWith(month));
+  const bud=getBudgets();
+  const label=sel.options[sel.selectedIndex].text;
+  document.getElementById('report-month-label').textContent=label.toUpperCase();
+
+  // KPIs
+  const kpis=[
+    {label:'Total Income',val:fmt(s.income),color:'acid'},
+    {label:'Total Expenses',val:fmt(s.expense),color:'pink'},
+    {label:'Net Savings',val:fmt(s.savings),color:s.savings>=0?'acid':'danger'},
+    {label:'Savings Rate',val:s.savingsRate.toFixed(1)+'%',color:s.savingsRate>=20?'cyan':'danger'},
+  ];
+  document.getElementById('report-kpis').innerHTML=kpis.map(k=>`
+    <div class="liquid-card" style="padding:1.2rem;">
+      <div class="card-label">${k.label}</div>
+      <div class="card-value ${k.color}">${k.val}</div>
+    </div>`).join('');
+
+  // Bar chart
+  const expCats=cats.filter(c=>c.spent>0);
+  drawBarChart('report-bar',[{data:expCats.map(c=>c.spent),color:'#CCFF00'}],expCats.map(c=>c.label.split(' ')[0]),{height:200});
+
+  // Pie
+  drawPieChart('report-pie',expCats.map(c=>({value:c.spent,color:c.color})),{donut:true,centerText:fmt(s.expense).replace('₹',''),centerSub:'Total'});
+  const total=expCats.reduce((a,c)=>a+c.spent,0);
+  document.getElementById('report-legend').innerHTML=expCats.slice(0,5).map(c=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:.73rem;">
+      <div style="display:flex;align-items:center;gap:.4rem;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+        <span style="color:var(--light);">${c.icon} ${c.label}</span>
+      </div>
+      <span style="font-weight:600;">${total>0?(c.spent/total*100).toFixed(0):0}%</span>
+    </div>`).join('');
+
+  // Transaction table
+  document.getElementById('tx-report-count').textContent=txns.length+' RECORDS';
+  document.getElementById('report-tx-body').innerHTML=txns.map(t=>{
+    const c=getCatById(t.category);
+    const amt=t.type==='income'?`<span style="color:var(--acid);">+${fmt(t.amount)}</span>`:`<span style="color:var(--danger);">-${fmt(t.amount)}</span>`;
+    return`<tr>
+      <td style="font-size:.75rem;color:var(--mid);">${t.date}</td>
+      <td style="font-weight:600;font-size:.82rem;">${t.desc}</td>
+      <td><span class="tag ${t.category}">${c.icon} ${c.label}</span></td>
+      <td><span class="tag ${t.type}">${t.type}</span></td>
+      <td>${amt}</td>
+    </tr>`;
+  }).join('');
+
+  // Category breakdown table
+  document.getElementById('cat-breakdown-body').innerHTML=expCats.map(c=>{
+    const cb=bud.categories[c.id];
+    const txCount=txns.filter(t=>t.category===c.id).length;
+    const pct=cb?Math.min(c.spent/cb*100,100):null;
+    const status=!cb?'<span style="color:var(--mid);">No budget</span>':pct>=100?`<span style="color:var(--danger);">Over by ${fmt(c.spent-cb)}</span>`:pct>=80?`<span style="color:#FFB800;">${pct.toFixed(0)}% used</span>`:`<span style="color:var(--acid);">On track</span>`;
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:.5rem;">${c.icon} ${c.label}</div></td>
+      <td style="color:var(--mid);">${txCount}</td>
+      <td style="font-weight:700;">${fmt(c.spent)}</td>
+      <td style="color:var(--mid);">${cb?fmt(cb):'—'}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCSV(){
+  const month=sel.value;
+  const txns=getTransactions().filter(t=>t.date.startsWith(month));
+  const rows=[['Date','Description','Category','Type','Amount (INR)','Note']];
+  txns.forEach(t=>rows.push([t.date,`"${t.desc}"`,getCatById(t.category).label,t.type,t.type==='expense'?-t.amount:t.amount,`"${t.note||''}"`]));
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`ExpenseIQ_${month}.csv`;
+  a.click();
+  showToast('CSV exported!');
+}
+
+loadReport();
+window.addEventListener('resize',loadReport);
+</script>
+</body>
+</html>

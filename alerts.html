@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Alerts</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="marquee-bar"><div class="marquee-track"><span>◈ ALERTS CENTER</span><span>◆ OVERSPENDING WARNINGS · BILL REMINDERS</span><span>◈ ALERTS CENTER</span><span>◆ OVERSPENDING WARNINGS · BILL REMINDERS</span></div></div>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="page-title glitch" id="page-title">ALERTS</div><div id="page-subtitle"></div></div>
+      <div class="topbar-actions">
+        <button class="chrome-btn ghost" onclick="dismissAll()">✕ Dismiss All</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;" id="alert-stats"></div>
+
+    <!-- ACTIVE ALERTS -->
+    <div class="liquid-card accent-danger">
+      <div class="chart-title">Active Alerts <span class="chart-badge" id="active-count" style="border-color:rgba(255,51,102,.4);color:var(--danger);background:rgba(255,51,102,.1);">0</span></div>
+      <div id="alerts-list"></div>
+      <div id="alerts-empty" style="display:none;text-align:center;padding:2.5rem;color:var(--mid);">
+        <div style="font-size:2.5rem;margin-bottom:.5rem;">✅</div>
+        <div style="font-size:.85rem;font-weight:600;color:var(--acid);">All clear! No active alerts.</div>
+        <div style="font-size:.75rem;margin-top:.2rem;">Your budgets are all within limits.</div>
+      </div>
+    </div>
+
+    <!-- BILL REMINDERS -->
+    <div class="liquid-card">
+      <div class="chart-title">Bill Reminders <span class="chart-badge">UPCOMING</span></div>
+      <div id="bills-list"></div>
+    </div>
+
+    <!-- NOTIFICATION SETTINGS -->
+    <div class="liquid-card accent-cyan">
+      <div class="chart-title">Notification Settings</div>
+      <div style="display:flex;flex-direction:column;gap:.85rem;" id="notif-settings"></div>
+      <button class="chrome-btn" style="margin-top:1rem;" onclick="saveNotifSettings()">Save Preferences →</button>
+    </div>
+
+    <!-- DISMISSED -->
+    <div class="liquid-card">
+      <div class="chart-title">Dismissed <span class="chart-badge" id="dismissed-count">0</span></div>
+      <div id="dismissed-list"></div>
+    </div>
+  </main>
+</div>
+
+<div class="marquee-bar bottom"><div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;"><span>◆ STAY ALERT</span><span>▲ NEVER OVERSPEND AGAIN</span><span>◆ SMART NOTIFICATIONS</span><span>◆ STAY ALERT</span><span>▲ NEVER OVERSPEND AGAIN</span><span>◆ SMART NOTIFICATIONS</span></div></div>
+<div id="toast-wrap"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script>
+initDB();
+document.getElementById('sidebar-mount').innerHTML=getSidebar('alerts.html');
+document.getElementById('page-subtitle').textContent='Budget warnings & bill reminders';
+refreshAlerts();
+
+const typeIcon={critical:'🚨',warning:'⚠️',info:'ℹ️'};
+const typeColor={critical:'var(--danger)',warning:'#FFB800',info:'var(--cyan)'};
+
+function render(){
+  const all=getAlerts();
+  const active=all.filter(a=>!a.dismissed&&a.type!=='info');
+  const bills=all.filter(a=>a.type==='info');
+  const dismissed=all.filter(a=>a.dismissed);
+
+  // Stats
+  const crit=active.filter(a=>a.type==='critical').length;
+  const warn=active.filter(a=>a.type==='warning').length;
+  document.getElementById('alert-stats').innerHTML=[
+    {label:'Critical',val:crit,color:'var(--danger)'},
+    {label:'Warnings',val:warn,color:'#FFB800'},
+    {label:'Dismissed',val:dismissed.length,color:'var(--mid)'},
+  ].map(s=>`<div class="liquid-card" style="padding:1rem;text-align:center;">
+    <div class="card-label" style="text-align:center;">${s.label}</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:2.5rem;color:${s.color};">${s.val}</div>
+  </div>`).join('');
+
+  document.getElementById('active-count').textContent=active.length;
+
+  // Active alerts
+  const alertEl=document.getElementById('alerts-list');
+  const emptyEl=document.getElementById('alerts-empty');
+  if(!active.length){alertEl.innerHTML='';emptyEl.style.display='block';}
+  else{
+    emptyEl.style.display='none';
+    alertEl.innerHTML=active.map(a=>`
+      <div class="alert-item" id="alert-${a.id}">
+        <div class="alert-icon ${a.type}">${typeIcon[a.type]||'📢'}</div>
+        <div style="flex:1;">
+          <div class="alert-title" style="color:${typeColor[a.type]};">${a.title}</div>
+          <div class="alert-msg">${a.msg}</div>
+          <div class="alert-actions">
+            <button class="chrome-btn ghost" style="padding:.25rem .6rem;font-size:.65rem;" onclick="dismiss('${a.id}')">Dismiss</button>
+            <button class="chrome-btn ghost" style="padding:.25rem .6rem;font-size:.65rem;border-color:rgba(0,240,255,.3);color:var(--cyan);" onclick="snooze('${a.id}')">Snooze 1h</button>
+          </div>
+        </div>
+        <div style="font-size:.62rem;color:var(--mid);white-space:nowrap;">${new Date(a.date).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`).join('');
+  }
+
+  // Bills
+  document.getElementById('bills-list').innerHTML=bills.map(b=>`
+    <div class="alert-item">
+      <div class="alert-icon info">💡</div>
+      <div style="flex:1;">
+        <div class="alert-title">${b.title}</div>
+        <div class="alert-msg">${b.msg}</div>
+      </div>
+      <button class="chrome-btn ghost" style="padding:.25rem .6rem;font-size:.65rem;" onclick="dismiss('${b.id}')">Done</button>
+    </div>`).join('');
+
+  // Dismissed
+  document.getElementById('dismissed-count').textContent=dismissed.length;
+  document.getElementById('dismissed-list').innerHTML=dismissed.length?dismissed.map(a=>`
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04);opacity:.5;font-size:.78rem;">
+      <span>${typeIcon[a.type]||'◆'}</span>
+      <span style="color:var(--mid);">${a.title}</span>
+      <span style="margin-left:auto;"><button class="icon-btn" onclick="undismiss('${a.id}')" title="Restore" style="font-size:.65rem;width:24px;height:24px;">↺</button></span>
+    </div>`).join('')
+    :'<div style="font-size:.78rem;color:var(--mid);padding:.5rem 0;">No dismissed alerts.</div>';
+}
+
+function dismiss(id){dismissAlert(id);showToast('Alert dismissed');render();}
+function snooze(id){dismissAlert(id);showToast('Snoozed for 1 hour','info');render();}
+function undismiss(id){
+  const a=getAlerts().map(x=>x.id===id?{...x,dismissed:false}:x);
+  localStorage.setItem('eiq_alerts',JSON.stringify(a));
+  showToast('Alert restored','info');render();
+}
+function dismissAll(){
+  const a=getAlerts().map(x=>({...x,dismissed:true}));
+  localStorage.setItem('eiq_alerts',JSON.stringify(a));
+  showToast('All alerts dismissed');render();
+}
+
+// NOTIFICATION SETTINGS
+const prefs=getPrefs();
+const settings=[
+  {key:'notifyBudget',label:'Budget Overspend Alerts',desc:'Notify when you exceed or approach budget limits.'},
+  {key:'notifyBills',label:'Bill Reminders',desc:'Remind me about upcoming bill due dates.'},
+  {key:'notifySavings',label:'Savings Goal Updates',desc:'Celebrate when savings milestones are hit.'},
+];
+document.getElementById('notif-settings').innerHTML=settings.map(s=>`
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;">
+    <div>
+      <div style="font-size:.82rem;font-weight:600;color:var(--white);">${s.label}</div>
+      <div style="font-size:.72rem;color:var(--mid);">${s.desc}</div>
+    </div>
+    <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+      <input type="checkbox" id="pref-${s.key}" ${prefs[s.key]?'checked':''} style="opacity:0;width:0;height:0;">
+      <span onclick="togglePref('${s.key}')" style="position:absolute;cursor:pointer;inset:0;background:${prefs[s.key]?'var(--acid)':'rgba(255,255,255,.1)'};border-radius:24px;transition:.3s;" id="tog-${s.key}">
+        <span style="position:absolute;left:${prefs[s.key]?'22':'2'}px;top:2px;width:20px;height:20px;border-radius:50%;background:${prefs[s.key]?'var(--void)':'var(--mid)'};transition:.3s;" id="knob-${s.key}"></span>
+      </span>
+    </label>
+  </div>`).join('');
+
+function togglePref(key){
+  const cb=document.getElementById('pref-'+key);
+  cb.checked=!cb.checked;
+  const on=cb.checked;
+  document.getElementById('tog-'+key).style.background=on?'var(--acid)':'rgba(255,255,255,.1)';
+  document.getElementById('knob-'+key).style.left=on?'22px':'2px';
+  document.getElementById('knob-'+key).style.background=on?'var(--void)':'var(--mid)';
+}
+
+function saveNotifSettings(){
+  const p={};
+  settings.forEach(s=>p[s.key]=document.getElementById('pref-'+s.key).checked);
+  setPrefs({...getPrefs(),...p});
+  showToast('Preferences saved!');
+}
+
+render();
+</script>
+</body>
+</html>

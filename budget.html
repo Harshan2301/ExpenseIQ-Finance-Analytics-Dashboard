@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Budget</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="marquee-bar"><div class="marquee-track"><span>◈ BUDGET CONTROL</span><span>◆ SET LIMITS PER CATEGORY</span><span>▲ TRACK USAGE IN REAL TIME</span><span>◈ BUDGET CONTROL</span><span>◆ SET LIMITS PER CATEGORY</span><span>▲ TRACK USAGE IN REAL TIME</span></div></div>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="page-title glitch" id="page-title">BUDGET</div><div id="page-subtitle"></div></div>
+      <div class="topbar-actions">
+        <button class="chrome-btn" onclick="saveBudgets()">Save Budgets →</button>
+      </div>
+    </div>
+
+    <!-- OVERALL BUDGET -->
+    <div class="liquid-card">
+      <div class="chart-title">Monthly Budget Cap <span class="chart-badge">OVERALL</span></div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center;">
+        <div>
+          <div style="display:flex;align-items:baseline;gap:.5rem;margin-bottom:.6rem;">
+            <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;color:var(--mid);">₹</span>
+            <input id="monthly-budget" class="form-input" type="number" style="font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;background:transparent;border-color:transparent;padding:.2rem 0;width:200px;" oninput="updateOverallPreview()"/>
+          </div>
+          <div class="progress-wrap" style="height:10px;margin-bottom:.4rem;">
+            <div id="overall-fill" class="progress-fill" style="width:0%;background:var(--acid);"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--mid);">
+            <span>Spent: <span id="overall-spent" style="color:var(--white);font-weight:600;"></span></span>
+            <span>Remaining: <span id="overall-rem" style="color:var(--acid);font-weight:600;"></span></span>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div id="overall-pct" style="font-family:'Syne',sans-serif;font-weight:800;font-size:3rem;color:var(--acid);"></div>
+          <div style="font-size:.6rem;letter-spacing:.2em;color:var(--mid);text-transform:uppercase;">Used</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORY BUDGETS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;" id="cat-budget-grid"></div>
+
+    <!-- HISTORY COMPARISON -->
+    <div class="liquid-card accent-cyan">
+      <div class="chart-title">Monthly Comparison <span class="chart-badge">LAST 3 MONTHS</span></div>
+      <canvas id="compare-chart" style="width:100%;"></canvas>
+    </div>
+
+    <!-- TIPS -->
+    <div class="liquid-card accent-pink">
+      <div class="chart-title">Budget Tips <span class="chart-badge">SMART ADVICE</span></div>
+      <div id="budget-tips" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;"></div>
+    </div>
+  </main>
+</div>
+
+<div class="marquee-bar bottom"><div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;"><span>◆ BUDGET CONTROL OS</span><span>▲ STAY UNDER LIMIT</span><span>◆ SAVE MORE EVERY MONTH</span><span>◆ BUDGET CONTROL OS</span><span>▲ STAY UNDER LIMIT</span><span>◆ SAVE MORE EVERY MONTH</span></div></div>
+<div id="toast-wrap"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/charts.js"></script>
+<script>
+initDB();
+document.getElementById('sidebar-mount').innerHTML=getSidebar('budget.html');
+document.getElementById('page-subtitle').textContent='Set & manage spending limits';
+
+const cm=currentMonth();
+const s=getMonthSummary(cm);
+const bud=getBudgets();
+const cats=getCategoryBreakdown(cm);
+
+// OVERALL
+document.getElementById('monthly-budget').value=bud.monthly;
+document.getElementById('overall-spent').textContent=fmt(s.expense);
+updateOverallPreview();
+
+function updateOverallPreview(){
+  const limit=parseFloat(document.getElementById('monthly-budget').value)||0;
+  const pct=limit>0?Math.min(s.expense/limit*100,100):0;
+  const color=pct>=100?'var(--danger)':pct>=80?'#FFB800':'var(--acid)';
+  document.getElementById('overall-fill').style.width=pct+'%';
+  document.getElementById('overall-fill').style.background=color;
+  document.getElementById('overall-pct').textContent=pct.toFixed(0)+'%';
+  document.getElementById('overall-pct').style.color=color;
+  document.getElementById('overall-rem').textContent=fmt(Math.max(limit-s.expense,0));
+}
+
+// CATEGORY GRID
+function renderCatGrid(){
+  const b=getBudgets();
+  document.getElementById('cat-budget-grid').innerHTML=CATEGORIES.filter(c=>c.id!=='income').map(c=>{
+    const spent=cats.find(x=>x.id===c.id)?.spent||0;
+    const limit=b.categories[c.id]||0;
+    const pct=limit>0?Math.min(spent/limit*100,100):0;
+    const color=pct>=100?'var(--danger)':pct>=80?'#FFB800':'var(--acid)';
+    return`<div class="liquid-card">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;">
+        <span style="font-size:1.4rem;">${c.icon}</span>
+        <div>
+          <div style="font-weight:700;font-size:.85rem;">${c.label}</div>
+          <div style="font-size:.65rem;color:var(--mid);">Spent: ${fmt(spent)}</div>
+        </div>
+        <div style="margin-left:auto;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:${color};">${pct.toFixed(0)}%</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem;">
+        <span style="font-size:.75rem;color:var(--mid);">₹</span>
+        <input id="cat-${c.id}" class="form-input" type="number" value="${limit}" placeholder="0" oninput="updateCatPreview('${c.id}')" style="padding:.4rem .6rem;"/>
+      </div>
+      <div class="progress-wrap">
+        <div id="catbar-${c.id}" class="progress-fill" style="width:${pct}%;background:${color};transition:width .5s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+renderCatGrid();
+
+function updateCatPreview(id){
+  const limit=parseFloat(document.getElementById('cat-'+id)?.value)||0;
+  const spent=cats.find(c=>c.id===id)?.spent||0;
+  const pct=limit>0?Math.min(spent/limit*100,100):0;
+  const color=pct>=100?'var(--danger)':pct>=80?'#FFB800':'var(--acid)';
+  const bar=document.getElementById('catbar-'+id);
+  if(bar){bar.style.width=pct+'%';bar.style.background=color;}
+}
+
+function saveBudgets(){
+  const monthly=parseFloat(document.getElementById('monthly-budget').value)||60000;
+  const categories={};
+  CATEGORIES.filter(c=>c.id!=='income').forEach(c=>{
+    const v=parseFloat(document.getElementById('cat-'+c.id)?.value)||0;
+    if(v>0)categories[c.id]=v;
+  });
+  setBudgets({monthly,categories});
+  showToast('Budgets saved!');
+  updateOverallPreview();
+}
+
+// COMPARISON CHART
+const hist=getMonthlyHistory(3);
+drawBarChart('compare-chart',[
+  {data:hist.map(h=>h.income),color:'#CCFF00'},
+  {data:hist.map(h=>h.expense),color:'#FF00FF'},
+],hist.map(h=>h.label),{height:200});
+
+// TIPS
+const tips=[
+  {icon:'💡',title:'50/30/20 Rule',msg:'Spend 50% on needs, 30% on wants, save 20% of income.'},
+  {icon:'🎯',title:'Zero-Based Budget',msg:'Assign every rupee a job. Income minus expenses should equal zero.'},
+  {icon:'📅',title:'Review Weekly',msg:'Check your budget every Sunday to catch overspending early.'},
+  {icon:'🏦',title:'Pay Yourself First',msg:'Transfer savings the moment salary arrives before spending.'},
+];
+document.getElementById('budget-tips').innerHTML=tips.map(t=>`
+  <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:.85rem;">
+    <div style="font-size:1.3rem;margin-bottom:.3rem;">${t.icon}</div>
+    <div style="font-size:.8rem;font-weight:700;color:var(--pink);margin-bottom:.2rem;">${t.title}</div>
+    <div style="font-size:.72rem;color:var(--mid);line-height:1.5;">${t.msg}</div>
+  </div>`).join('');
+
+window.addEventListener('resize',()=>drawBarChart('compare-chart',[
+  {data:hist.map(h=>h.income),color:'#CCFF00'},
+  {data:hist.map(h=>h.expense),color:'#FF00FF'},
+],hist.map(h=>h.label),{height:200}));
+</script>
+</body>
+</html>

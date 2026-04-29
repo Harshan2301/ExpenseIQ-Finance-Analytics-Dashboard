@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Analytics</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="marquee-bar"><div class="marquee-track"><span>◈ ANALYTICS ENGINE</span><span>◆ PIE · BAR · LINE · HEATMAP</span><span>◈ ANALYTICS ENGINE</span><span>◆ PIE · BAR · LINE · HEATMAP</span></div></div>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="page-title glitch" id="page-title">ANALYTICS</div><div id="page-subtitle"></div></div>
+      <div class="topbar-actions">
+        <div class="time-tabs">
+          <button class="time-tab" onclick="setAnalyticsRange('1M',this)">1M</button>
+          <button class="time-tab active" onclick="setAnalyticsRange('3M',this)">3M</button>
+          <button class="time-tab" onclick="setAnalyticsRange('6M',this)">6M</button>
+          <button class="time-tab" onclick="setAnalyticsRange('1Y',this)">1Y</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 1: Line + Pie -->
+    <div style="display:grid;grid-template-columns:1.8fr 1fr;gap:1.1rem;">
+      <div class="liquid-card">
+        <div class="chart-title">Savings Trend <span class="chart-badge" id="range-badge">3 MONTHS</span></div>
+        <canvas id="savings-chart" style="width:100%;"></canvas>
+        <div style="display:flex;gap:1.5rem;margin-top:.85rem;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;"><div style="width:10px;height:2px;background:var(--acid);border-radius:2px;"></div>Income</div>
+          <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;"><div style="width:10px;height:2px;background:var(--pink);border-radius:2px;"></div>Expenses</div>
+          <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;"><div style="width:10px;height:2px;background:var(--cyan);border-radius:2px;"></div>Savings</div>
+        </div>
+      </div>
+      <div class="liquid-card accent-pink">
+        <div class="chart-title">Category Split</div>
+        <canvas id="analytics-pie" width="180" height="180" style="display:block;margin:0 auto;"></canvas>
+        <div id="analytics-legend" style="display:flex;flex-direction:column;gap:.4rem;margin-top:.85rem;"></div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Bar + Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;">
+      <div class="liquid-card">
+        <div class="chart-title">Income vs Expenses (Monthly) <span class="chart-badge">BAR</span></div>
+        <canvas id="bar-chart" style="width:100%;"></canvas>
+      </div>
+      <div class="liquid-card accent-cyan">
+        <div class="chart-title">Key Metrics</div>
+        <div id="metrics-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;"></div>
+      </div>
+    </div>
+
+    <!-- HEATMAP -->
+    <div class="liquid-card">
+      <div class="chart-title">Daily Spending Heatmap <span class="chart-badge">THIS MONTH</span></div>
+      <div style="font-size:.7rem;color:var(--mid);margin-bottom:.75rem;">Darker = more spending. Today is highlighted with an outline.</div>
+      <div id="heatmap-wrap"></div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem;font-size:.65rem;color:var(--mid);">
+        <div style="width:12px;height:12px;border-radius:2px;background:rgba(204,255,0,.15);"></div>Low
+        <div style="width:12px;height:12px;border-radius:2px;background:rgba(204,255,0,.5);"></div>Medium
+        <div style="width:12px;height:12px;border-radius:2px;background:rgba(204,255,0,1);"></div>High
+      </div>
+    </div>
+
+    <!-- TOP EXPENSES TABLE -->
+    <div class="liquid-card">
+      <div class="chart-title">Top Expenses <span class="chart-badge" id="top-period">THIS MONTH</span></div>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Description</th><th>Category</th><th>Date</th><th>Amount</th></tr></thead>
+        <tbody id="top-tx-body"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="marquee-bar bottom"><div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;"><span>◆ DATA VISUALIZATION OS</span><span>▲ PATTERNS REVEALED</span><span>◆ SPEND SMARTER</span><span>◆ DATA VISUALIZATION OS</span><span>▲ PATTERNS REVEALED</span><span>◆ SPEND SMARTER</span></div></div>
+<div id="toast-wrap"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/charts.js"></script>
+<script>
+initDB();
+document.getElementById('sidebar-mount').innerHTML=getSidebar('analytics.html');
+document.getElementById('page-subtitle').textContent='Charts, trends & spending patterns';
+
+let months=3;
+
+function setAnalyticsRange(r,btn){
+  document.querySelectorAll('.time-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  months={1:1,3:3,6:6,'1Y':12}[r]||3;
+  document.getElementById('range-badge').textContent=months+(months===12?' MONTHS (1Y)':' MONTHS');
+  renderAll();
+}
+
+function renderAll(){
+  const hist=getMonthlyHistory(months);
+  const labels=hist.map(h=>h.label);
+
+  // Savings trend (line)
+  drawLineChart('savings-chart',[
+    {data:hist.map(h=>h.income),color:'#CCFF00'},
+    {data:hist.map(h=>h.expense),color:'#FF00FF'},
+    {data:hist.map(h=>Math.max(h.savings,0)),color:'#00F0FF'},
+  ],labels,{fill:false,height:220});
+
+  // Bar chart
+  drawBarChart('bar-chart',[
+    {data:hist.map(h=>h.income),color:'#CCFF00'},
+    {data:hist.map(h=>h.expense),color:'#FF3366'},
+  ],labels,{height:200});
+
+  // Pie (current month)
+  const cm=currentMonth();
+  const cats=getCategoryBreakdown(cm).filter(c=>c.spent>0);
+  const total=cats.reduce((s,c)=>s+c.spent,0);
+  drawPieChart('analytics-pie',cats.map(c=>({value:c.spent,color:c.color})),{donut:true,centerText:cats.length+'',centerSub:'Categories'});
+  document.getElementById('analytics-legend').innerHTML=cats.map(c=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:.73rem;">
+      <div style="display:flex;align-items:center;gap:.4rem;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+        <span style="color:var(--light);">${c.icon} ${c.label}</span>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <span style="color:var(--mid);">${fmt(c.spent)}</span>
+        <span style="color:var(--white);font-weight:600;">${total>0?(c.spent/total*100).toFixed(0):0}%</span>
+      </div>
+    </div>`).join('');
+
+  // Key metrics
+  const s=getMonthSummary(cm);
+  const totalSpent=hist.reduce((a,h)=>a+h.expense,0);
+  const avgSpend=totalSpent/months;
+  const avgSave=hist.reduce((a,h)=>a+h.savingsRate,0)/months;
+  const netWorth=getTotalBalance();
+  const metrics=[
+    {label:'Avg Monthly Spend',val:fmt(avgSpend),color:'var(--pink)'},
+    {label:'Avg Savings Rate',val:avgSave.toFixed(1)+'%',color:avgSave>=20?'var(--acid)':'var(--danger)'},
+    {label:'Net Worth',val:fmt(netWorth),color:netWorth>=0?'var(--acid)':'var(--danger)'},
+    {label:'This Month Saved',val:fmt(Math.max(s.savings,0)),color:'var(--cyan)'},
+  ];
+  document.getElementById('metrics-grid').innerHTML=metrics.map(m=>`
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:.85rem;text-align:center;">
+      <div class="card-label" style="text-align:center;">${m.label}</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:${m.color};">${m.val}</div>
+    </div>`).join('');
+
+  // Heatmap
+  drawHeatmap('heatmap-wrap',getTransactions());
+
+  // Top expenses
+  const topTx=getTransactions()
+    .filter(t=>t.type==='expense'&&t.date.startsWith(cm))
+    .sort((a,b)=>b.amount-a.amount)
+    .slice(0,8);
+  document.getElementById('top-tx-body').innerHTML=topTx.map((t,i)=>{
+    const c=getCatById(t.category);
+    return`<tr>
+      <td style="color:var(--mid);font-weight:700;">${i+1}</td>
+      <td style="font-weight:600;font-size:.82rem;">${t.desc}</td>
+      <td><span class="tag ${t.category}">${c.icon} ${c.label}</span></td>
+      <td style="font-size:.75rem;color:var(--mid);">${t.date}</td>
+      <td style="color:var(--danger);font-weight:700;">-${fmt(t.amount)}</td>
+    </tr>`;
+  }).join('');
+}
+
+renderAll();
+window.addEventListener('resize',renderAll);
+</script>
+</body>
+</html>

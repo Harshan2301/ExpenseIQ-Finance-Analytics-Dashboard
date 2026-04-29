@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExpenseIQ — Transactions</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="marquee-bar"><div class="marquee-track"><span>◈ TRANSACTIONS</span><span>◆ ADD · EDIT · DELETE · FILTER</span><span>◈ TRANSACTIONS</span><span>◆ ADD · EDIT · DELETE · FILTER</span></div></div>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="page-title glitch" id="page-title">TRANSACTIONS</div><div id="page-subtitle"></div></div>
+      <div class="topbar-actions">
+        <button class="chrome-btn ghost" onclick="openAdd()">+ Add Transaction</button>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="liquid-card" style="padding:1rem 1.4rem;">
+      <div style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;">
+        <div style="flex:1;min-width:140px;">
+          <div class="form-label" style="margin-bottom:.3rem;">Search</div>
+          <input id="f-search" class="form-input" placeholder="Search transactions..." oninput="applyFilters()" style="padding:.45rem .75rem;"/>
+        </div>
+        <div>
+          <div class="form-label" style="margin-bottom:.3rem;">Type</div>
+          <select id="f-type" class="form-input" onchange="applyFilters()" style="padding:.45rem .75rem;">
+            <option value="">All</option><option value="income">Income</option><option value="expense">Expense</option>
+          </select>
+        </div>
+        <div>
+          <div class="form-label" style="margin-bottom:.3rem;">Category</div>
+          <select id="f-cat" class="form-input" onchange="applyFilters()" style="padding:.45rem .75rem;" id="f-cat">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+        <div>
+          <div class="form-label" style="margin-bottom:.3rem;">Month</div>
+          <input id="f-month" class="form-input" type="month" onchange="applyFilters()" style="padding:.45rem .75rem;"/>
+        </div>
+        <button class="chrome-btn ghost" onclick="clearFilters()" style="padding:.48rem .85rem;">✕ Clear</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY STRIP -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;" id="tx-summary"></div>
+
+    <!-- TABLE -->
+    <div class="liquid-card" style="padding:0;overflow:hidden;">
+      <div style="padding:1.2rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;">
+        <div class="chart-title" style="margin:0;">All Transactions <span class="chart-badge" id="tx-count">0 RECORDS</span></div>
+        <div style="display:flex;gap:.4rem;">
+          <button class="icon-btn" onclick="sortBy('date')" title="Sort by date">📅</button>
+          <button class="icon-btn" onclick="sortBy('amount')" title="Sort by amount">₹</button>
+        </div>
+      </div>
+      <div style="padding:0 1.4rem 1.4rem;overflow-x:auto;">
+        <table class="data-table" id="tx-table">
+          <thead>
+            <tr>
+              <th style="width:36px;"></th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tx-body"></tbody>
+        </table>
+        <div id="tx-empty" style="display:none;text-align:center;padding:3rem;color:var(--mid);font-size:.85rem;">No transactions found. Add your first one!</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="marquee-bar bottom"><div class="marquee-track" style="animation-direction:reverse;animation-duration:22s;"><span>◆ ADD EXPENSE</span><span>▲ TRACK INCOME</span><span>◆ FILTER BY CATEGORY</span><span>▲ EDIT ANYTIME</span><span>◆ ADD EXPENSE</span><span>▲ TRACK INCOME</span><span>◆ FILTER BY CATEGORY</span><span>▲ EDIT ANYTIME</span></div></div>
+<div id="modal-overlay"></div>
+<div id="toast-wrap"></div>
+
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script>
+initDB();
+document.getElementById('sidebar-mount').innerHTML=getSidebar('transactions.html');
+document.getElementById('page-subtitle').textContent='Manage your income & expenses';
+
+// Populate category filter
+const catSel=document.getElementById('f-cat');
+CATEGORIES.forEach(c=>catSel.add(new Option(c.icon+' '+c.label,c.id)));
+
+// Set default month filter
+document.getElementById('f-month').value=currentMonth();
+
+let sortField='date',sortDir=-1,editId=null;
+let filtered=[];
+
+function applyFilters(){
+  const search=document.getElementById('f-search').value.toLowerCase();
+  const type=document.getElementById('f-type').value;
+  const cat=document.getElementById('f-cat').value;
+  const month=document.getElementById('f-month').value;
+  filtered=getTransactions().filter(t=>{
+    if(search&&!t.desc.toLowerCase().includes(search))return false;
+    if(type&&t.type!==type)return false;
+    if(cat&&t.category!==cat)return false;
+    if(month&&!t.date.startsWith(month))return false;
+    return true;
+  });
+  filtered.sort((a,b)=>{
+    const av=sortField==='amount'?a.amount:a.date;
+    const bv=sortField==='amount'?b.amount:b.date;
+    return av<bv?sortDir:-sortDir;
+  });
+  render();
+}
+
+function sortBy(f){sortField=f;sortDir*=-1;applyFilters();}
+
+function render(){
+  const tbody=document.getElementById('tx-body');
+  document.getElementById('tx-count').textContent=filtered.length+' RECORDS';
+  const income=filtered.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense=filtered.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  document.getElementById('tx-summary').innerHTML=[
+    {label:'Total Income',val:fmt(income),color:'var(--acid)'},
+    {label:'Total Expenses',val:fmt(expense),color:'var(--danger)'},
+    {label:'Net',val:fmt(income-expense),color:income-expense>=0?'var(--acid)':'var(--danger)'},
+  ].map(s=>`<div class="liquid-card" style="padding:1rem;"><div class="card-label">${s.label}</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;color:${s.color};">${s.val}</div></div>`).join('');
+
+  if(!filtered.length){tbody.innerHTML='';document.getElementById('tx-empty').style.display='block';return;}
+  document.getElementById('tx-empty').style.display='none';
+  tbody.innerHTML=filtered.map(t=>{
+    const c=getCatById(t.category);
+    const amt=t.type==='income'
+      ?`<span style="color:var(--acid);font-weight:700;">+${fmt(t.amount)}</span>`
+      :`<span style="color:var(--danger);font-weight:700;">-${fmt(t.amount)}</span>`;
+    return`<tr>
+      <td style="font-size:1.1rem;">${c.icon}</td>
+      <td><div style="font-weight:600;font-size:.82rem;">${t.desc}</div>${t.note?`<div style="font-size:.65rem;color:var(--mid);">${t.note}</div>`:''}</td>
+      <td><span class="tag ${t.category}">${c.label}</span></td>
+      <td style="font-size:.75rem;color:var(--mid);">${t.date}</td>
+      <td><span class="tag ${t.type}">${t.type}</span></td>
+      <td>${amt}</td>
+      <td style="text-align:right;">
+        <button class="icon-btn" onclick="openEdit('${t.id}')" title="Edit">✏️</button>
+        <button class="icon-btn" onclick="confirmDelete('${t.id}')" title="Delete" style="border-color:rgba(255,51,102,.3);">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAdd(){
+  editId=null;
+  showModal('Add Transaction',getTransactionForm(null),
+    `<button class="chrome-btn ghost" onclick="closeModal()">Cancel</button>
+     <button class="chrome-btn" onclick="saveTx()">Save →</button>`);
+}
+
+function openEdit(id){
+  editId=id;
+  const tx=getTransactions().find(t=>t.id===id);
+  if(!tx)return;
+  showModal('Edit Transaction',getTransactionForm(tx),
+    `<button class="chrome-btn danger" onclick="confirmDelete('${id}')">Delete</button>
+     <button class="chrome-btn ghost" onclick="closeModal()">Cancel</button>
+     <button class="chrome-btn" onclick="saveTx()">Update →</button>`);
+}
+
+function saveTx(){
+  const tx=collectTxForm();if(!tx)return;
+  if(editId){updateTransaction(editId,tx);showToast('Transaction updated!');}
+  else{addTransaction(tx);showToast('Transaction added!');}
+  closeModal();editId=null;applyFilters();
+}
+
+function confirmDelete(id){
+  showModal('Delete Transaction','<p style="font-size:.9rem;color:var(--mid);">Are you sure you want to delete this transaction? This action cannot be undone.</p>',
+    `<button class="chrome-btn ghost" onclick="closeModal()">Cancel</button>
+     <button class="chrome-btn danger" onclick="doDelete('${id}')">Delete</button>`);
+}
+function doDelete(id){deleteTransaction(id);closeModal();showToast('Deleted','error');applyFilters();}
+
+function clearFilters(){
+  document.getElementById('f-search').value='';
+  document.getElementById('f-type').value='';
+  document.getElementById('f-cat').value='';
+  document.getElementById('f-month').value=currentMonth();
+  applyFilters();
+}
+
+applyFilters();
+</script>
+</body>
+</html>
