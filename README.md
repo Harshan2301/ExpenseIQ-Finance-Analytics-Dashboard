@@ -58,3 +58,45 @@ Finance Analytics Dashboard/
 ├── profile.html
 ├── style.css
 └── app.js
+Core Modules
+Dashboard
+
+Displays total balance, income, expenses, savings, budget usage, and recent transactions.
+
+Transactions
+
+Add, edit, delete, filter, and manage all income and expense records.
+
+Budget Management
+
+Set monthly and category-wise budget limits with progress tracking.
+
+Analytics
+
+Visual insights using charts for expense categories, monthly comparisons, and savings trends.
+
+Alerts
+
+Automatic warnings for overspending, bill reminders, and financial recommendations.
+
+Reports
+
+Monthly financial summaries with CSV export and print-to-PDF functionality.
+
+Future Enhancements
+Email alerts using Nodemailer
+Mobile app version
+Backend integration using Node.js + MongoDB
+AI-powered spending insights
+Admin analytics dashboard
+Bank account integration APIs
+Installation
+Clone the repository
+git clone https://github.com/your-username/expenseiq-finance-dashboard.git
+Open the project folder
+cd expenseiq-finance-dashboard
+Run the project
+
+Simply open index.html in your browser
+
+or use VS Code Live Server for better development experience.
