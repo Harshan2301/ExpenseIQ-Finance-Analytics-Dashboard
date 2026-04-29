@@ -1,4 +1,4 @@
-# ExpenseIQ — Finance Analytics Dashboard
+<img width="1919" height="973" alt="image" src="https://github.com/user-attachments/assets/56265b9b-8a84-4af5-99e4-4cb544d28eee" /># ExpenseIQ — Finance Analytics Dashboard
 
 ## Track Smart. Spend Better.
 
@@ -7,6 +7,7 @@ ExpenseIQ is a multi-page Finance Analytics Dashboard built using HTML5, CSS3, a
 The application is designed as a smart personal finance management system with a premium dashboard experience, featuring analytics charts, category-based expense tracking, CSV export, print-to-PDF reporting, and browser-side data persistence using localStorage.
 
 Built with the Acid Graphic design system, ExpenseIQ combines modern financial functionality with a futuristic liquid chrome UI featuring neon gradients, responsive layouts, reusable UI components, and interactive analytics.
+<img width="1919" height="973" alt="image" src="https://github.com/user-attachments/assets/31e3bad1-84cf-4957-9f36-72c9524edfd5" />
 
 ---
 
