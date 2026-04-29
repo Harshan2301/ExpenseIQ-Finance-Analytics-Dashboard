@@ -1,4 +1,4 @@
-<img width="1919" height="973" alt="image" src="https://github.com/user-attachments/assets/56265b9b-8a84-4af5-99e4-4cb544d28eee" /># ExpenseIQ — Finance Analytics Dashboard
+# ExpenseIQ — Finance Analytics Dashboard
 
 ## Track Smart. Spend Better.
 
@@ -42,6 +42,7 @@ Built with the Acid Graphic design system, ExpenseIQ combines modern financial f
 - Component-Based Architecture
 
 ---
+<img width="1919" height="360" alt="image" src="https://github.com/user-attachments/assets/6250958e-91d8-4bb4-9c6b-806fd652da46" />
 
 ## Project Structure
 
